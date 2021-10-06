@@ -115,31 +115,34 @@ def portfolio_returns(weights, returns):
 # print(mv_weights(returns_sheet, 0, returns_sheet.shape[0], 120))
 # print(param_weights(returns_sheet, BM_sheet, 120, returns_sheet.shape[0]))
 
-
+print("\nP1")
 w1 = mv_weights(returns_sheet, 0, returns_sheet.shape[0], 120)
-w2 = constrained_mv_weights(returns_sheet, 0, returns_sheet.shape[0], 120)
-w3 = param_weights([0.9, 0.8], returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
-w4 = constrained_param_weights(w3)
-
 returns_p1 = portfolio_returns(w1, returns_sheet)
+print("MEAN: ", np.mean(returns_p1))
+print("STD: ", np.std(returns_p1))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p1)), 12) - 1) / (np.std(returns_p1)*np.sqrt(12)))
+
+print("\nP2")
+w2 = constrained_mv_weights(returns_sheet, 0, returns_sheet.shape[0], 120)
 returns_p2 = portfolio_returns(w2, returns_sheet)
+print("MEAN: ", np.mean(returns_p2))
+print("STD: ", np.std(returns_p2))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p2)), 12) - 1) / (np.std(returns_p2)*np.sqrt(12)))
+
+print("\nP3")
+w3 = param_weights([0.9, 0.8], returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
 returns_p3 = portfolio_returns(w3, returns_sheet)
+print("MEAN: ", np.mean(returns_p3))
+print("STD: ", np.std(returns_p3))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p3)), 12) - 1) / (np.std(returns_p3)*np.sqrt(12)))
+
+print("\nP4")
+w4 = constrained_param_weights(w3)
 returns_p4 = portfolio_returns(w4, returns_sheet)
+print("MEAN: ", np.mean(returns_p4))
+print("STD: ", np.std(returns_p4))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p4)), 12) - 1) / (np.std(returns_p4)*np.sqrt(12)))
 
-# print(np.mean(returns_p1))
-# print(np.mean(returns_p2))
-# print(np.mean(returns_p3))
-# print(np.mean(returns_p4))
-
-# print(np.std(returns_p1))
-# print(np.std(returns_p2))
-# print(np.std(returns_p3))
-# print(np.std(returns_p4))
-
-# print((np.power((1 + np.mean(returns_p1)), 12) - 1) / (np.std(returns_p1)*np.sqrt(12)))
-# print((np.power((1 + np.mean(returns_p2)), 12) - 1) / (np.std(returns_p2)*np.sqrt(12)))
-print((np.power((1 + np.mean(returns_p3)), 12) - 1) / (np.std(returns_p3)*np.sqrt(12)))
-# print((np.power((1 + np.mean(returns_p4)), 12) - 1) / (np.std(returns_p4)*np.sqrt(12)))
 
 # QUESTION 3
 # cumulative_returns_p1 = np.cumsum(returns_p1)
@@ -167,7 +170,7 @@ def max_p3_sr(returns, bm, start, end):
         return -(np.power((1 + np.mean(r)), 12) - 1) / (np.std(r) * np.sqrt(12))
 
     def optimization(returns, bm, start, end):
-        x0 = np.array([0.75, 0.75])
+        x0 = np.array([0.2, 0.2])
         bounds = [(0, 1.5), (0, 1.5)]
 
         maximum = optimize.minimize(min_objective, x0, args=(returns, bm, start, end), method="SLSQP", bounds=bounds)
@@ -183,4 +186,12 @@ def max_p3_sr(returns, bm, start, end):
     return optimization(returns, bm, start, end)
 
 
-print(max_p3_sr(returns_sheet, BM_sheet, 120, returns_sheet.shape[0]))
+print("\nOPTIMIZED THETAS P3:")
+opt_sharpe_theta_res = max_p3_sr(returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
+w3_opt = param_weights(opt_sharpe_theta_res[1:3], returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
+returns_p3_opt = portfolio_returns(w3_opt, returns_sheet)
+print("MEAN: ", np.mean(returns_p3_opt))
+print("STD: ", np.std(returns_p3_opt))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p3_opt)), 12) - 1) / (np.std(returns_p3_opt)*np.sqrt(12)))
+
+# QUESTION 6
