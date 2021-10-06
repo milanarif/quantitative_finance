@@ -57,10 +57,10 @@ def param_weights(thetas, returns, bm, start, end):
     # TODO: 120 or 121 ??
 
     for i in range(start, end):
-        t_return = returns.iloc[i - 1].to_numpy()
+        t_minus_1_return = returns.iloc[i - 1].to_numpy()
         t_bm = bm.iloc[i].to_numpy()
 
-        std_return = ((t_return - t_return.mean()) / t_return.std())
+        std_return = ((t_minus_1_return - t_minus_1_return.mean()) / t_minus_1_return.std())
         std_bm = ((t_bm - t_bm.mean()) / t_bm.std())
 
         row_weights = []
@@ -93,7 +93,7 @@ def portfolio_returns(weights, returns):
     return_list = []
     for i in range(120, 480):
         for j in range(0, 10):
-            sum += weights[i - 120][j] * returns.iloc[i, j]
+            sum += weights[i - 120][j] * returns.to_numpy()[i][j]
         return_list.append(sum)
         sum = 0
 
@@ -145,17 +145,17 @@ print("SHARPE: ", (np.power((1 + np.mean(returns_p4)), 12) - 1) / (np.std(return
 
 
 # QUESTION 3
-# cumulative_returns_p1 = np.cumsum(returns_p1)
-# cumulative_returns_p2 = np.cumsum(returns_p2)
-# cumulative_returns_p3 = np.cumsum(returns_p3)
-# cumulative_returns_p4 = np.cumsum(returns_p4)
-# #
-# plt.plot(cumulative_returns_p1, label="p1")
-# plt.plot(cumulative_returns_p2, label="p2")
-# plt.plot(cumulative_returns_p3, label="p3")
-# plt.plot(cumulative_returns_p4, label="p4")
-# plt.legend()
-# plt.show()
+cumulative_returns_p1 = np.cumsum(returns_p1)
+cumulative_returns_p2 = np.cumsum(returns_p2)
+cumulative_returns_p3 = np.cumsum(returns_p3)
+cumulative_returns_p4 = np.cumsum(returns_p4)
+#
+plt.plot(cumulative_returns_p1, label="p1")
+plt.plot(cumulative_returns_p2, label="p2")
+plt.plot(cumulative_returns_p3, label="p3")
+plt.plot(cumulative_returns_p4, label="p4")
+plt.legend()
+plt.show()
 
 
 # QUESTION 4
@@ -190,8 +190,90 @@ print("\nOPTIMIZED THETAS P3:")
 opt_sharpe_theta_res = max_p3_sr(returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
 w3_opt = param_weights(opt_sharpe_theta_res[1:3], returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
 returns_p3_opt = portfolio_returns(w3_opt, returns_sheet)
+print("THETA 1: ", opt_sharpe_theta_res[1])
+print("THETA 2: ", opt_sharpe_theta_res[2])
 print("MEAN: ", np.mean(returns_p3_opt))
 print("STD: ", np.std(returns_p3_opt))
 print("SHARPE: ", (np.power((1 + np.mean(returns_p3_opt)), 12) - 1) / (np.std(returns_p3_opt)*np.sqrt(12)))
 
+
 # QUESTION 6
+def w_tilde_t(asset_ret_t_minus_1, port_ret_t_minus_1, weights_t_minus_1):
+    w_tilde_t = []
+    for i in range(len(weights_t_minus_1)):
+        w_tilde_t.append(weights_t_minus_1[i] * ((1 + asset_ret_t_minus_1[i]) / (1 + port_ret_t_minus_1)))
+    return w_tilde_t
+
+
+def turnover_t(weights, tilde_weights):
+    sum = 0
+    for i in range(10):
+        sum += np.absolute(weights[i] - tilde_weights[i])
+    return sum / 2
+
+
+def turnover_series(returns, port_returns, weights):
+    turnover = []
+    for i in range(len(port_returns)):
+        if i > 0:
+            w_tilde = w_tilde_t(returns.to_numpy()[i+119], port_returns[i-1], weights[i-1])
+            turnover.append(turnover_t(weights[i], w_tilde))
+
+        else:
+            turnover.append(turnover_t(weights[i], weights[i]))
+
+    return np.asarray(turnover)
+
+
+t1 = turnover_series(returns_sheet, returns_p1, w1)
+t2 = turnover_series(returns_sheet, returns_p2, w2)
+t3 = turnover_series(returns_sheet, returns_p3, w3)
+t4 = turnover_series(returns_sheet, returns_p4, w4)
+
+print("\nTURNOVER RATES:")
+print("P1: ", np.mean(t1))
+print("P2: ", np.mean(t2))
+print("P3: ", np.mean(t3))
+print("P4: ", np.mean(t4))
+
+
+# QUESTION 7
+def adj_portfolio_returns(returns, port_returns, weights):
+    sum = 0
+    return_list = []
+    for i in range(360):
+        if i > 0:
+            weights_tilde = w_tilde_t(returns.to_numpy()[i + 119], port_returns[i - 1], weights[i - 1])
+        else:
+            weights_tilde = weights[i]
+        for j in range(0, 10):
+            sum += weights[i][j] * returns.to_numpy()[i + 120][j] - (0.005 * (abs(weights[i][j] - weights_tilde[j])))
+        return_list.append(sum)
+        sum = 0
+
+    return return_list
+
+
+print("\nAdjusted P1")
+adj_returns_p1 = adj_portfolio_returns(returns_sheet, returns_p1, w1)
+print("MEAN: ", np.mean(adj_returns_p1))
+print("STD: ", np.std(adj_returns_p1))
+print("SHARPE: ", (np.power((1 + np.mean(adj_returns_p1)), 12) - 1) / (np.std(adj_returns_p1)*np.sqrt(12)))
+
+print("\nAdjusted P2")
+adj_returns_p2 = adj_portfolio_returns(returns_sheet, returns_p2, w2)
+print("MEAN: ", np.mean(adj_returns_p2))
+print("STD: ", np.std(adj_returns_p2))
+print("SHARPE: ", (np.power((1 + np.mean(adj_returns_p2)), 12) - 1) / (np.std(adj_returns_p2)*np.sqrt(12)))
+
+print("\nAdjusted P3")
+adj_returns_p3 = adj_portfolio_returns(returns_sheet, returns_p3, w3)
+print("MEAN: ", np.mean(adj_returns_p3))
+print("STD: ", np.std(adj_returns_p3))
+print("SHARPE: ", (np.power((1 + np.mean(adj_returns_p3)), 12) - 1) / (np.std(adj_returns_p3)*np.sqrt(12)))
+
+print("\nAdjusted P4")
+adj_returns_p4 = adj_portfolio_returns(returns_sheet, returns_p4, w4)
+print("MEAN: ", np.mean(adj_returns_p4))
+print("STD: ", np.std(adj_returns_p4))
+print("SHARPE: ", (np.power((1 + np.mean(adj_returns_p4)), 12) - 1) / (np.std(adj_returns_p4)*np.sqrt(12)))
