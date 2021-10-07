@@ -101,7 +101,6 @@ def portfolio_returns(weights, returns):
 
 
 # QUESTION 1
-print("QUESTION 1")
 w1 = mv_weights(returns_sheet, 0, 120, 120)
 w2 = constrained_mv_weights(returns_sheet, 0, 120, 120)
 w3 = param_weights([0.9, 0.8], returns_sheet, BM_sheet, 120, 121)
