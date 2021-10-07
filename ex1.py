@@ -101,18 +101,20 @@ def portfolio_returns(weights, returns):
 
 
 # QUESTION 1
-# w1 = mv_weights(returns_sheet, 0, 120, 120)
-# w2 = constrained_mv_weights(returns_sheet, 0, 120, 120)
-# w3 = param_weights(returns_sheet, BM_sheet, 120, 121)
-# w4 = constrained_param_weights(w3)
-# print(" QUESTION 1 ")
-# print("\nP1: ", w1)
-# print("\nP2: ", w2)
-# print("\nP3: ", w3)
-# print("\nP4: ", w4)
+print("QUESTION 1")
+w1 = mv_weights(returns_sheet, 0, 120, 120)
+w2 = constrained_mv_weights(returns_sheet, 0, 120, 120)
+w3 = param_weights([0.9, 0.8], returns_sheet, BM_sheet, 120, 121)
+w4 = constrained_param_weights(w3)
+print(" QUESTION 1 ")
+print("\nP1: ", w1)
+print("\nP2: ", w2)
+print("\nP3: ", w3)
+print("\nP4: ", w4)
+
 
 # QUESTION 2
-# print(mv_weights(returns_sheet, 0, returns_sheet.shape[0], 120))
+# print(mv_weights(returns_sheet, 0, returns_sheet.shape[0] , 120))
 # print(param_weights(returns_sheet, BM_sheet, 120, returns_sheet.shape[0]))
 
 print("\nP1")
@@ -304,7 +306,6 @@ def max_p3_sr_w_tc(returns, bm, start, end):
         return [max_sharpe, theta_1, theta_2]
 
     return optimization(returns, bm, start, end)
-
 
 
 print("\nOPTIMIZED THETAS P3 (ADJUSTED FOR TC):")
