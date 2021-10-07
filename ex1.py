@@ -277,3 +277,42 @@ adj_returns_p4 = adj_portfolio_returns(returns_sheet, returns_p4, w4)
 print("MEAN: ", np.mean(adj_returns_p4))
 print("STD: ", np.std(adj_returns_p4))
 print("SHARPE: ", (np.power((1 + np.mean(adj_returns_p4)), 12) - 1) / (np.std(adj_returns_p4)*np.sqrt(12)))
+
+
+# QUESTION 8
+def max_p3_sr_w_tc(returns, bm, start, end):
+
+    def min_objective(thetas, returns, bm, start, end):
+        w = param_weights(thetas, returns, bm, start, end)
+        r = portfolio_returns(w, returns)
+        adj_r = adj_portfolio_returns(returns, r, w)
+
+        return -(np.power((1 + np.mean(adj_r)), 12) - 1) / (np.std(adj_r) * np.sqrt(12))
+
+    def optimization(returns, bm, start, end):
+        x0 = np.array([0.2, 0.2])
+        bounds = [(0, 1.5), (0, 1.5)]
+
+        maximum = optimize.minimize(min_objective, x0, args=(returns, bm, start, end), method="SLSQP", bounds=bounds)
+
+        opt = maximum.x
+
+        max_sharpe = round(-maximum.fun, 4)
+        theta_1 = round(float(opt[0]), 4)
+        theta_2 = round(float(opt[1]), 4)
+
+        return [max_sharpe, theta_1, theta_2]
+
+    return optimization(returns, bm, start, end)
+
+
+
+print("\nOPTIMIZED THETAS P3 (ADJUSTED FOR TC):")
+opt_sharpe_theta_res_tc = max_p3_sr_w_tc(returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
+w3_opt_tc = param_weights(opt_sharpe_theta_res_tc[1:3], returns_sheet, BM_sheet, 120, returns_sheet.shape[0])
+returns_p3_opt_tc = portfolio_returns(w3_opt_tc, returns_sheet)
+print("THETA 1: ", opt_sharpe_theta_res_tc[1])
+print("THETA 2: ", opt_sharpe_theta_res_tc[2])
+print("MEAN: ", np.mean(returns_p3_opt_tc))
+print("STD: ", np.std(returns_p3_opt_tc))
+print("SHARPE: ", (np.power((1 + np.mean(returns_p3_opt_tc)), 12) - 1) / (np.std(returns_p3_opt_tc)*np.sqrt(12)))
