@@ -6,34 +6,40 @@ import matplotlib.pyplot as plt
 returns_sheet = pd.read_excel('data_Ass1_G2.xlsx', sheet_name='Returns').drop('month', 1)
 BM_sheet = pd.read_excel('data_Ass1_G2.xlsx', sheet_name='BM').drop('month', 1)
 
-
+# start is the first period we want to predict.
 def mv_weights(data, start, end, intervals):
     weights = []
     column_ones = np.ones((10, 1))
     row_ones = np.ones(10)
-    for i in range(start, end - intervals + 1):
-        cov_matrix = data.iloc[i: intervals + i].cov().to_numpy()
+    # Go through each period (row) and calculate using the covariance matrix from the interval before
+    for i in range(start, end):
+        cov_matrix = data.iloc[i - intervals: i].cov().to_numpy()
         inv_cov_matrix = np.linalg.inv(cov_matrix)
 
         numerator = np.matmul(inv_cov_matrix, column_ones)
         denominator = np.matmul(row_ones, np.matmul(inv_cov_matrix, column_ones))
 
+        # Add the weights to the array to be returned at the end
         weights.append(np.divide(numerator, denominator))
 
-    return np.around(np.array(weights)[:, :, 0], 4)
+    return np.array(weights)[:, :, 0]
 
 
 def constrained_mv_weights(data, start, end, intervals):
+    # Define the function that we aim to minimize
     def min_objective(weights, cov_matrix):
         return np.matmul(np.transpose(weights), np.matmul(cov_matrix, weights))
 
+    # The constraint that our minimization is subject to
     def constraint(weights):
         return 1 - np.matmul(np.transpose(weights), column_ones)
 
     weights = []
     column_ones = np.ones((10, 1))
+    # We define the constraint as an equality constraint and set the constraining function to constraint above
     cons = ({'type': 'eq', 'fun': constraint})
 
+    # We set the bounds for the weights and give the function starting values for the optimization
     def optimize_function(cov_matrix):
         bounds = [(0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25), (0, 0.25),
                   (0, 0.25)]
@@ -44,20 +50,20 @@ def constrained_mv_weights(data, start, end, intervals):
         opt = maximal.x
         return opt
 
-    for i in range(start, end - intervals + 1):
-        cov_matrix = data.iloc[i: intervals + i].cov().to_numpy()
+    # It is here that we actually call the above function and append the results after each iteration to an array
+    # The below for-loop has the same indexing as the unconstrained example. Only difference is the numeric optimization
+    for i in range(start, end):
+        cov_matrix = data.iloc[i - intervals: i].cov().to_numpy()
         weights.append(optimize_function(cov_matrix))
 
-    return np.around(np.array(weights), 4)
+    return np.array(weights)
 
 
 def param_weights(thetas, returns, bm, start, end):
     weights = []
-    # TODO: ONLY ONE MONTH?
-    # TODO: 120 or 121 ??
 
     for i in range(start, end):
-        t_minus_1_return = returns.iloc[i - 1].to_numpy()
+        t_minus_1_return = returns.iloc[i-1].to_numpy()
         t_bm = bm.iloc[i].to_numpy()
 
         std_return = ((t_minus_1_return - t_minus_1_return.mean()) / t_minus_1_return.std())
