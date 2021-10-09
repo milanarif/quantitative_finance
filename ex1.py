@@ -158,7 +158,6 @@ cumulative_returns_p4 = np.cumsum(returns_p4)
 #
 dates = map(str, pd.read_excel('data_Ass1_G2.xlsx', sheet_name='Returns').iloc[120:,0].to_numpy())
 x_values = [datetime.datetime.strptime(d, "%Y%m").date() for d in dates]
-plt.figure(dpi=200)
 plt.plot(x_values, cumulative_returns_p1, label="MV (P1)")
 plt.plot(x_values, cumulative_returns_p2, label="Constrained MV (P2)")
 plt.plot(x_values, cumulative_returns_p3, label="Parametric (P3)")
@@ -166,8 +165,9 @@ plt.plot(x_values, cumulative_returns_p4, label="Constrained Parametric (P4)")
 plt.title("Cumulative returns on the portfolios")
 plt.ylabel("Cumulative return")
 plt.legend()
+plt.savefig("plot.png", dpi=300)
 plt.show()
-plt.savefig("plot.png")
+
 
 # QUESTION 4
 
