@@ -1,3 +1,5 @@
+import datetime
+
 import numpy as np
 import pandas as pd
 import scipy.optimize as optimize
@@ -59,7 +61,7 @@ def constrained_mv_weights(data, start, end, intervals):
 
     return np.array(weights)
 
-
+# Asked at Q&A and indexed returns and bm equal following answer
 # Thetas are passed in as a list, start is first period to be calculated, end is the second to last.
 def param_weights(thetas, returns, bm, start, end):
     weights = []
@@ -154,13 +156,18 @@ cumulative_returns_p2 = np.cumsum(returns_p2)
 cumulative_returns_p3 = np.cumsum(returns_p3)
 cumulative_returns_p4 = np.cumsum(returns_p4)
 #
-plt.plot(cumulative_returns_p1, label="p1")
-plt.plot(cumulative_returns_p2, label="p2")
-plt.plot(cumulative_returns_p3, label="p3")
-plt.plot(cumulative_returns_p4, label="p4")
+dates = map(str, pd.read_excel('data_Ass1_G2.xlsx', sheet_name='Returns').iloc[120:,0].to_numpy())
+x_values = [datetime.datetime.strptime(d, "%Y%m").date() for d in dates]
+plt.figure(dpi=200)
+plt.plot(x_values, cumulative_returns_p1, label="MV (P1)")
+plt.plot(x_values, cumulative_returns_p2, label="Constrained MV (P2)")
+plt.plot(x_values, cumulative_returns_p3, label="Parametric (P3)")
+plt.plot(x_values, cumulative_returns_p4, label="Constrained Parametric (P4)")
+plt.title("Cumulative returns on the portfolios")
+plt.ylabel("Cumulative return")
 plt.legend()
 plt.show()
-
+plt.savefig("plot.png")
 
 # QUESTION 4
 
@@ -178,7 +185,7 @@ def max_p3_sr(returns, bm, start, end):
 
     # Give optimization starting values and bounds
     def optimization(returns, bm, start, end):
-        x0 = np.array([0.2, 0.2])
+        x0 = np.array([0.75, 0.75])
         bounds = [(0, 1.5), (0, 1.5)]
 
         maximum = optimize.minimize(min_objective, x0, args=(returns, bm, start, end), method="SLSQP", bounds=bounds)
