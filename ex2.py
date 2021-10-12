@@ -18,10 +18,12 @@ def ex1(announcementReturn):
         row = []
         for j in range(0, announcementReturn.shape[1], 100):
             row.append(np.average(announcementReturn[i][j : j+100]))
-            print(j)
         portfolio_return_matrix.append(row)
 
-    return np.array(portfolio_return_matrix)
+    average_returns = []
+    for i in range(10):
+        average_returns.append(np.mean(np.transpose(np.array(portfolio_return_matrix))[i]))
 
+    return average_returns
 
 print(ex1(announcementReturn))
