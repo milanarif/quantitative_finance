@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 import matplotlib.pyplot as plt
@@ -5,10 +6,11 @@ import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 
-announcementReturn = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='AnnouncementReturn').drop('month', 1)
-returns = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Returns').drop('month', 1)
-me = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='ME').drop('month', 1)
-factors = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Factors').drop('month', 1)
+announcementReturn = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='AnnouncementReturn', engine='openpyxl').drop(
+    'month', 1)
+returns = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Returns', engine='openpyxl').drop('month', 1)
+me = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='ME', engine='openpyxl').drop('month', 1)
+factors = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Factors', engine='openpyxl').drop('month', 1)
 
 
 def ex1(announcementReturn, returns):
@@ -162,7 +164,7 @@ def ex4(announcementReturn, me, factors, returns):
         result = model.fit()
 
         # Uncomment below for regression table
-        print(result.summary())
+        # print(result.summary())
 
         reg_results.append([result.params[1], result.params[2], result.params[3], result.params[4]])
 
@@ -208,18 +210,21 @@ def ex5(announcementReturn, me, factors, returns):
     capm = smf.ols("ret ~ mktrf", data=data)
     result = capm.fit()
 
-    print(result.summary())
+    # print(result.summary())
 
     carhart = smf.ols("ret ~ mktrf + smb + hml + wml", data=data)
     result = carhart.fit()
 
-    print(result.summary())
+    # print(result.summary())
+
+    return port_returns
+
 
 # ex5(announcementReturn, me, factors, returns)
 
 
 # TODO: CAN WE ZIP-SORT LIKE THIS!?
-def ex6(announcementReturn, me, factors, returns):
+def ex6(announcementReturn, me, returns):
     announcementReturn = announcementReturn.to_numpy()
     me = me.to_numpy()
     returns = returns.to_numpy()
@@ -228,14 +233,111 @@ def ex6(announcementReturn, me, factors, returns):
         sorted_zipped = sorted(zip(announcementReturn[i], returns[i]))
         returns[i] = [element for _, element in sorted_zipped]
 
-    print(returns[0])
+    for i in range(announcementReturn.shape[0]):
+        sorted_zipped = sorted(zip(announcementReturn[i], me[i]))
+        me[i] = [element for _, element in sorted_zipped]
+
+    low = returns[:, :300]
+    low_me = me[:, :300]
+
+    for i in range(low_me.shape[0]):
+        sorted_zipped = sorted(zip(low_me[i], low[i]))
+        low[i] = [element for _, element in sorted_zipped]
+
+    mid = returns[:, 300: 700]
+    mid_me = me[:, 300: 700]
+
+    for i in range(mid_me.shape[0]):
+        sorted_zipped = sorted(zip(mid_me[i], mid[i]))
+        mid[i] = [element for _, element in sorted_zipped]
+
+    high = returns[:, 700: 1000]
+    high_me = me[:, 700: 1000]
+
+    for i in range(high_me.shape[0]):
+        sorted_zipped = sorted(zip(high_me[i], high[i]))
+        high[i] = [element for _, element in sorted_zipped]
+
+    small_low = low[:, :150]
+    small_low_me = low_me[:, :150]
+    small_low_sum_me = small_low_me.sum(axis=1)
+
+    vw_small_low_returns = []
+    for i in range(360):
+        sum = 0
+        for j in range(150):
+            sum += ((small_low_me[i][j] / small_low_sum_me[i]) * small_low[i][j])
+        vw_small_low_returns.append(sum)
+
+    big_low = low[:, 150:]
+    big_low_me = low_me[:, 150:]
+    big_low_sum_me = big_low_me.sum(axis=1)
+
+    vw_big_low_returns = []
+    for i in range(360):
+        sum = 0
+        for j in range(150):
+            sum += ((big_low_me[i][j] / big_low_sum_me[i]) * big_low[i][j])
+        vw_big_low_returns.append(sum)
+
+    small_high = high[:, :150]
+    small_high_me = high_me[:, :150]
+    small_high_sum_me = small_high_me.sum(axis=1)
+
+    vw_small_high_returns = []
+    for i in range(360):
+        sum = 0
+        for j in range(150):
+            sum += ((small_high_me[i][j] / small_high_sum_me[i]) * small_high[i][j])
+        vw_small_high_returns.append(sum)
+
+    big_high = high[:, 150:]
+    big_high_me = high_me[:, 150:]
+    big_high_sum_me = big_high_me.sum(axis=1)
+
+    vw_big_high_returns = []
+    for i in range(360):
+        sum = 0
+        for j in range(150):
+            sum += ((big_high_me[i][j] / big_high_sum_me[i]) * big_high[i][j])
+        vw_big_high_returns.append(sum)
+
+    return_factor = []
+    for i in range(360):
+        return_factor.append(0.5 * (vw_small_high_returns[i] + vw_big_high_returns[i]) - 0.5 * (
+                    vw_small_low_returns[i] + vw_big_low_returns[i]))
+
+    cumulative_returns = np.cumsum(return_factor)
+
+    dates = map(str, pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Returns').iloc[:, 0].to_numpy())
+    x_values = [datetime.datetime.strptime(d, "%Y%m").date() for d in dates]
+    plt.plot(x_values, cumulative_returns)
+    plt.title("Cumulative returns on double sorted portfolio\n(Announcement Return and Market Equity)")
+    plt.ylabel("Total net return")
+    plt.savefig("ex6.png", dpi=300)
+    plt.show()
+
+    return return_factor
 
 
-    # for i in range(announcementReturn.shape[0]):
-    #     sorted_zipped = sorted(zip(announcementReturn[i], me[i]))
-    #     me[i] = [element for _, element in sorted_zipped]
+# ex6(announcementReturn, me, factors, returns)
 
 
-ex6(announcementReturn, me, factors, returns)
+# TODO: WHY NEGATIVE!?
+def ex7(announcementReturn, me, factors, returns):
+    return_factor = ex6(announcementReturn, me, returns)
+    returns_ls = ex5(announcementReturn, me, factors, returns)
+
+    data = pd.DataFrame({'ret': returns_ls})
+    data['factor'] = return_factor
+    data['mktrf'] = factors['Mktrf']
+
+    model = smf.ols("ret ~ mktrf + factor", data=data)
+    result = model.fit()
+
+    print(result.summary())
+
+
+ex7(announcementReturn, me, factors, returns)
 
 sys.exit()
