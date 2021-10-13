@@ -115,15 +115,21 @@ def ex3(announcementReturn, me, factors, returns):
     market_excess = factors['Mktrf'].tolist()
     mean_mkt_ex_return = np.mean(market_excess)
 
+    # Create and design plot
     plt.scatter(betas, mean_vw_ex_returns)
     x = np.linspace(0, 1.6)
     plt.plot(x, mean_mkt_ex_return*x, color = 'red')
 
-    plt.text(x=(betas[0] + 0.025), y=mean_vw_ex_returns[0], s='1st', weight="bold")
-    plt.text(x=(betas[1] + 0.025), y=mean_vw_ex_returns[1], s='2nd', weight="bold")
-    plt.text(x=(betas[8] + 0.025), y=mean_vw_ex_returns[8], s='9th', weight="bold")
-    plt.text(x=(betas[9] + 0.025), y=mean_vw_ex_returns[9], s='10th', weight="bold")
-
+    plt.text(x=(betas[0] + 0.02), y=mean_vw_ex_returns[0], s='1st', weight="bold")
+    plt.text(x=(betas[1] + 0.02), y=mean_vw_ex_returns[1], s='2nd', weight="bold")
+    plt.text(x=(betas[8] + 0.02), y=mean_vw_ex_returns[8], s='9th', weight="bold")
+    plt.text(x=(betas[9] + 0.02), y=mean_vw_ex_returns[9], s='10th', weight="bold")
+    plt.title('Announcement Return Portfolios')
+    plt.ylabel('Average monthly excess return')
+    plt.xlabel('CAPM Beta')
+    plt.xlim([0, 1.6])
+    plt.ylim([0, 0.018])
+    plt.savefig("capm.png", dpi=300)
     plt.show()
 
 
