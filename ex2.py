@@ -1,10 +1,8 @@
 import sys
 
 import matplotlib.pyplot as plt
-import numpy
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
 announcementReturn = pd.read_excel('data_Ass2_G2.xlsx', sheet_name='AnnouncementReturn').drop('month', 1)
@@ -92,10 +90,20 @@ def ex2(announcementReturn, me, returns):
 
 def ex3(announcementReturn, me, factors, returns):
     vw_returns = pd.DataFrame(ex2(announcementReturn, me, returns))
+    rf = factors['Rf']
+    vw_excess_returns = []
+    for i in range(360):
+        row = []
+        for j in range(10):
+            row.append(vw_returns.iloc[i, j] - rf.iloc[i])
+        vw_excess_returns.append(row)
+
+    vw_excess_returns = pd.DataFrame(vw_excess_returns)
+
     betas = []
 
     for i in range(10):
-        data = pd.DataFrame({'ret': (vw_returns[i])})
+        data = pd.DataFrame({'ret': (vw_excess_returns[i])})
         data['mktrf'] = factors['Mktrf']
 
         model = smf.ols("ret ~ mktrf", data=data)
@@ -106,24 +114,19 @@ def ex3(announcementReturn, me, factors, returns):
 
         betas.append(result.params[1])
 
-    risk_free = factors['Rf']
-    for i in range(360):
-        for j in range(10):
-            vw_returns.iloc[i, j] -= risk_free.iloc[i]
-
-    mean_vw_ex_returns = vw_returns.mean(axis=0).tolist()
+    mean_vw_excess_returns = vw_excess_returns.mean(axis=0).tolist()
     market_excess = factors['Mktrf'].tolist()
     mean_mkt_ex_return = np.mean(market_excess)
 
     # Create and design plot
-    plt.scatter(betas, mean_vw_ex_returns)
+    plt.scatter(betas, mean_vw_excess_returns)
     x = np.linspace(0, 1.6)
     plt.plot(x, mean_mkt_ex_return*x, color = 'red')
 
-    plt.text(x=(betas[0] + 0.02), y=mean_vw_ex_returns[0], s='1st', weight="bold")
-    plt.text(x=(betas[1] + 0.02), y=mean_vw_ex_returns[1], s='2nd', weight="bold")
-    plt.text(x=(betas[8] + 0.02), y=mean_vw_ex_returns[8], s='9th', weight="bold")
-    plt.text(x=(betas[9] + 0.02), y=mean_vw_ex_returns[9], s='10th', weight="bold")
+    plt.text(x=(betas[0] + 0.02), y=mean_vw_excess_returns[0], s='1st', weight="bold")
+    plt.text(x=(betas[1] + 0.02), y=mean_vw_excess_returns[1], s='2nd', weight="bold")
+    plt.text(x=(betas[8] + 0.02), y=mean_vw_excess_returns[8], s='9th', weight="bold")
+    plt.text(x=(betas[9] + 0.02), y=mean_vw_excess_returns[9], s='10th', weight="bold")
     plt.title('Announcement Return Portfolios')
     plt.ylabel('Average monthly excess return')
     plt.xlabel('CAPM Beta')
