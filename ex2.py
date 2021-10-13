@@ -200,7 +200,7 @@ def ex4(announcementReturn, me, factors, returns):
 # TODO: SUBTRACT RF? SHOULD ALREADY BE SUBTRACTED DUE TO R-SUBRTRACTION?
 def ex5(announcementReturn, me, factors, returns):
     vw_returns = pd.DataFrame(ex2(announcementReturn, me, returns))
-    port_returns = vw_returns[0] - vw_returns[9]
+    port_returns = vw_returns[9] - vw_returns[0]
     data = pd.DataFrame({'ret': port_returns})
     data['mktrf'] = factors['Mktrf']
     data['smb'] = factors['SMB']
@@ -304,15 +304,14 @@ def ex6(announcementReturn, me, returns):
 
     return_factor = []
     for i in range(360):
-        return_factor.append(0.5 * (vw_small_high_returns[i] + vw_big_high_returns[i]) - 0.5 * (
-                    vw_small_low_returns[i] + vw_big_low_returns[i]))
+        return_factor.append(0.5 * (vw_small_high_returns[i] + vw_big_high_returns[i]) - 0.5 * (vw_small_low_returns[i] + vw_big_low_returns[i]))
 
     cumulative_returns = np.cumsum(return_factor)
 
     dates = map(str, pd.read_excel('data_Ass2_G2.xlsx', sheet_name='Returns').iloc[:, 0].to_numpy())
     x_values = [datetime.datetime.strptime(d, "%Y%m").date() for d in dates]
     plt.plot(x_values, cumulative_returns)
-    plt.title("Cumulative returns on double sorted portfolio\n(Announcement Return and Market Equity)")
+    plt.title("Cumulative returns on double sorted portfolio (Hi - Lo)\n(Announcement Return and Market Equity)")
     plt.ylabel("Total net return")
     plt.savefig("ex6.png", dpi=300)
     plt.show()
