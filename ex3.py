@@ -76,9 +76,9 @@ def ex2(data):
 
     inv_dist_98 = NormalDist(0, 1).inv_cdf(0.98)
 
-    potential_neg_shock = - (((market_sigma * portfolio_beta) ** 2 + portfolio_sigma ** 2) ** 0.5) * inv_dist_98
+    potential_shock = (((market_sigma * portfolio_beta) ** 2 + portfolio_sigma ** 2) ** 0.5) * inv_dist_98
 
-    var = ((portfolio_alpha + (market_my * portfolio_beta)) + potential_neg_shock) * 50000
+    var = (-(portfolio_alpha + (market_my * portfolio_beta)) + potential_shock) * 50000
 
     # MONTE CARLO
     def day_returns_MC(var_matrix, market_my, market_sigma, runs):
@@ -92,7 +92,7 @@ def ex2(data):
 
         return np.array(asset_returns)
 
-    print(np.percentile(day_returns_MC(var_matrix, market_my, market_sigma, 50000), 2) * 50000)
+    print(np.percentile(day_returns_MC(var_matrix, market_my, market_sigma, 25000), 2) * 50000)
     print(var)
 
 
