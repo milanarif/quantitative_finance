@@ -4,6 +4,7 @@ from statistics import NormalDist
 import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from scipy.special import cbrt
 
 data = pd.read_excel('data_Ass3_G2.xlsx', sheet_name='Returns', engine='openpyxl').drop('date', 1)
 
@@ -22,11 +23,11 @@ def ex1(data):
 
     value_at_risk = (- portfolio_my * portfolio_value) + (portfolio_sigma * portfolio_value * inv_dist_98)
 
-    print("VaR_0.98:", round(value_at_risk, 1))
-    print(round(value_at_risk / portfolio_value, 4) * 100, "%")
+    print("VaR:", round(value_at_risk, 1))
+    print(round(value_at_risk / portfolio_value, 4) * 100, "%\n")
 
 
-ex1(data)
+# ex1(data)
 
 
 def ex2(data):
@@ -91,8 +92,51 @@ def ex2(data):
 
         return np.array(asset_returns)
 
-    print(np.percentile(day_returns_MC(var_matrix, market_my, market_sigma, 200000), 2) * 50000)
+    print(np.percentile(day_returns_MC(var_matrix, market_my, market_sigma, 50000), 2) * 50000)
     print(var)
 
 
 ex2(data)
+
+
+def ex3(data):
+    return_market = data['mkt']
+    delta = return_market.std() * cbrt(return_market.skew() / 2)
+    omega = (return_market.var() - (delta ** 2)) ** 0.5
+    eta = return_market.mean() - delta
+
+    print("delta:", delta)
+    print("omega:", omega)
+    print("eta:", eta)
+
+    variables = []
+    for i in range(5):
+        return_data = data[['mkt']].copy()
+        return_data['ret'] = data.iloc[:, 2 + i]
+
+        model = smf.ols("ret ~ mkt", data=return_data)
+        result = model.fit()
+        residual_std = result.resid.std()
+        variables.append([result.params[0], result.params[1], residual_std])
+
+    var_matrix = pd.DataFrame(variables)
+    var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+    var_matrix.index = data.iloc[:, 2:].columns
+
+    def day_returns_MC(var_matrix, runs):
+        asset_returns = []
+        for i in tqdm(range(runs)):
+            returns = 0
+            excess_return_mkt = eta + delta * np.random.exponential(1) + omega * np.random.normal(0, 1)
+            for i in range(5):
+                returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * excess_return_mkt + np.random.normal(0, var_matrix.iloc[i, 2]))
+            asset_returns.append(returns)
+
+        return np.array(asset_returns)
+
+    print(np.percentile(day_returns_MC(var_matrix, 250000), 2) * 50000)
+
+
+# ex3(data)
+
+# def ex4(data):
