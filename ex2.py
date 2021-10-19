@@ -139,7 +139,8 @@ def ex3(announcementReturn, me, factors, returns):
 
 
 # ex3(announcementReturn, me, factors, returns)
-# TODO: LOOKS ALOT LIKE CAPM?
+
+
 def ex4(announcementReturn, me, factors, returns):
     vw_returns = pd.DataFrame(ex2(announcementReturn, me, returns))
     rf = factors['Rf']
@@ -164,7 +165,8 @@ def ex4(announcementReturn, me, factors, returns):
         result = model.fit()
 
         # Uncomment below for regression table
-        # print(result.summary())
+        print("DECILE: ", i)
+        print(result.summary())
 
         reg_results.append([result.params[1], result.params[2], result.params[3], result.params[4]])
 
@@ -180,24 +182,24 @@ def ex4(announcementReturn, me, factors, returns):
     mean_vw_excess_returns = vw_excess_returns.mean(axis=0).tolist()
 
     plt.scatter(carhart_portfolio_prediction, mean_vw_excess_returns)
-    x = np.linspace(0, 15)
+    x = np.linspace(0, 0.017)
     plt.plot(x, x, color='red')
-    plt.text(x=(carhart_portfolio_prediction[0] + 1), y=mean_vw_excess_returns[0], s='1st', weight="bold")
-    plt.text(x=(carhart_portfolio_prediction[1] + 1), y=mean_vw_excess_returns[1], s='2nd', weight="bold")
-    plt.text(x=(carhart_portfolio_prediction[8] + 1), y=mean_vw_excess_returns[8], s='9th', weight="bold")
-    plt.text(x=(carhart_portfolio_prediction[9] + 1), y=mean_vw_excess_returns[9], s='10th', weight="bold")
-    # plt.xlim([0, 0.0175])
-    # plt.ylim([0, 0.0175])
+    plt.text(x=(carhart_portfolio_prediction[0] + 0.0002), y=mean_vw_excess_returns[0], s='1st', weight="bold")
+    plt.text(x=(carhart_portfolio_prediction[1] + 0.0002), y=mean_vw_excess_returns[1], s='2nd', weight="bold")
+    plt.text(x=(carhart_portfolio_prediction[8] + 0.0002), y=mean_vw_excess_returns[8], s='9th', weight="bold")
+    plt.text(x=(carhart_portfolio_prediction[9] + 0.0002), y=mean_vw_excess_returns[9], s='10th', weight="bold")
+    plt.xlim([0, 0.017])
+    plt.ylim([0, 0.017])
     plt.title('Carhart Four-Factor model')
     plt.ylabel('Average monthly excess return')
     plt.xlabel('Predicted monthly excess return')
-    plt.savefig("capm.png", dpi=300)
+    plt.savefig("carhart.png", dpi=300)
     plt.show()
 
 
 # ex4(announcementReturn, me, factors, returns)
 
-# TODO: SUBTRACT RF? SHOULD ALREADY BE SUBTRACTED DUE TO R-SUBRTRACTION?
+
 def ex5(announcementReturn, me, factors, returns):
     vw_returns = pd.DataFrame(ex2(announcementReturn, me, returns))
     port_returns = vw_returns[9] - vw_returns[0]
@@ -210,12 +212,12 @@ def ex5(announcementReturn, me, factors, returns):
     capm = smf.ols("ret ~ mktrf", data=data)
     result = capm.fit()
 
-    # print(result.summary())
+    print(result.summary())
 
     carhart = smf.ols("ret ~ mktrf + smb + hml + wml", data=data)
     result = carhart.fit()
 
-    # print(result.summary())
+    print(result.summary())
 
     return port_returns
 
@@ -304,7 +306,8 @@ def ex6(announcementReturn, me, returns):
 
     return_factor = []
     for i in range(360):
-        return_factor.append(0.5 * (vw_small_high_returns[i] + vw_big_high_returns[i]) - 0.5 * (vw_small_low_returns[i] + vw_big_low_returns[i]))
+        return_factor.append(0.5 * (vw_small_high_returns[i] + vw_big_high_returns[i]) - 0.5 * (
+                    vw_small_low_returns[i] + vw_big_low_returns[i]))
 
     cumulative_returns = np.cumsum(return_factor)
 
@@ -319,13 +322,13 @@ def ex6(announcementReturn, me, returns):
     return return_factor
 
 
-# ex6(announcementReturn, me, factors, returns)
+# ex6(announcementReturn, me, returns)
 
 
-# TODO: WHY NEGATIVE!?
 def ex7(announcementReturn, me, factors, returns):
     return_factor = ex6(announcementReturn, me, returns)
-    returns_ls = ex5(announcementReturn, me, factors, returns)
+    vw_returns = pd.DataFrame(ex2(announcementReturn, me, returns))
+    returns_ls = vw_returns[9] - vw_returns[0]
 
     data = pd.DataFrame({'ret': returns_ls})
     data['factor'] = return_factor
