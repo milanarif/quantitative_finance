@@ -5,6 +5,9 @@ import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.special import cbrt
+from sympy import Symbol, solve
+from scipy.stats import norm
+from scipy.optimize import fsolve
 
 data = pd.read_excel('data_Ass3_G2.xlsx', sheet_name='Returns', engine='openpyxl').drop('date', 1)
 
@@ -87,7 +90,9 @@ def ex2(data):
             returns = 0
             market_ret = np.random.normal(market_my, market_sigma)
             for i in range(5):
-                returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * market_ret + np.random.normal(0, var_matrix.iloc[i, 2]))
+                returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * market_ret + np.random.normal(0,
+                                                                                                                var_matrix.iloc[
+                                                                                                                    i, 2]))
             asset_returns.append(returns)
 
         return np.array(asset_returns)
@@ -96,7 +101,7 @@ def ex2(data):
     print(var)
 
 
-ex2(data)
+# ex2(data)
 
 
 def ex3(data):
@@ -125,18 +130,76 @@ def ex3(data):
 
     def day_returns_MC(var_matrix, runs):
         asset_returns = []
+        market_returns = []
         for i in tqdm(range(runs)):
             returns = 0
             excess_return_mkt = eta + delta * np.random.exponential(1) + omega * np.random.normal(0, 1)
+            market_returns.append(excess_return_mkt)
             for i in range(5):
-                returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * excess_return_mkt + np.random.normal(0, var_matrix.iloc[i, 2]))
+                returns += 0.2 * (
+                        var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * excess_return_mkt + np.random.normal(0,
+                                                                                                             var_matrix.iloc[
+                                                                                                                 i, 2]))
             asset_returns.append(returns)
 
-        return np.array(asset_returns)
+        return [np.array(asset_returns), np.array(market_returns)]
 
-    print(np.percentile(day_returns_MC(var_matrix, 250000), 2) * 50000)
+    res = day_returns_MC(var_matrix, 10000)
+    print(np.percentile(res[0], 2) * 50000)
+    return pd.DataFrame(res[1])
 
 
 # ex3(data)
 
+
 # def ex4(data):
+#     loss_return = data.iloc[:, 2:].mean(axis=1) * -1
+#     expected_return_loss = loss_return.mean()
+#     std_loss_return = loss_return.std()
+#     skew_loss_return = loss_return.skew()
+#
+#     delta_L = std_loss_return * cbrt(skew_loss_return / 2)
+#     omega_L = (std_loss_return ** 2 - delta_L ** 2) ** 0.5
+#     eta_L = (expected_return_loss - delta_L)
+#
+#     # print(delta_L, omega_L, eta_L)
+#
+#     def NEcdf(x, delta=delta_L, omega=omega_L, eta=eta_L):
+#         part_1 = norm.cdf((x - eta) / omega)
+#         part_2 = np.exp(((omega ** 2) / (2 * (delta ** 2))) - ((x - eta) / delta))
+#         part_3 = norm.cdf((omega / delta) - ((x - eta) / omega))
+#         return part_1 + (part_2 * part_3)
+#
+#     def optimize_goal(x):
+#         return NEcdf(x) - 0.98
+#
+#     opt_x = fsolve(optimize_goal, 0, maxfev=10000)
+#     print(NEcdf(opt_x), opt_x)
+
+
+def ex4(data):
+    variables = []
+    for i in range(5):
+        return_data = data[['mkt']].copy()
+        return_data['ret'] = data.iloc[:, 2 + i]
+
+        model = smf.ols("ret ~ mkt", data=return_data)
+        result = model.fit()
+        residual_std = result.resid.std()
+        variables.append([result.params[0], result.params[1], residual_std])
+        var_matrix = pd.DataFrame(variables)
+        var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+        var_matrix.index = data.iloc[:, 2:].columns
+
+    return_market = data['mkt']
+    delta = return_market.std() * cbrt(return_market.skew() / 2)
+    omega = (return_market.var() - (delta ** 2)) ** 0.5
+    eta = return_market.mean() - delta
+
+
+
+
+
+
+
+ex4(data)
