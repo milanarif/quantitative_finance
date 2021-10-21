@@ -7,7 +7,9 @@ from tqdm import tqdm
 from scipy.special import cbrt
 from sympy import Symbol, solve
 from scipy.stats import norm
+import scipy.optimize as spop
 from scipy.optimize import fsolve
+from arch import arch_model
 
 data = pd.read_excel('data_Ass3_G2.xlsx', sheet_name='Returns', engine='openpyxl').drop('date', 1)
 
@@ -152,7 +154,7 @@ def ex3(data):
     return pd.DataFrame(res[1])
 
 
-ex3(data)
+# ex3(data)
 
 
 def ex4(data):
@@ -201,9 +203,45 @@ def ex4(data):
     def targetfunc(x, omega, eta, delta, alpha):
         return cdfNE(x, omega, eta, delta) - alpha
 
-    print(fsolve(targetfunc, 0, (omega_l, eta_l, delta_l, 0.98)))
+    print("L:", fsolve(targetfunc, 0, (omega_l, eta_l, delta_l, 0.98)))
+
+# ex4(data)
+
+# def ex5(data):
+#     market_mean_return = data['mkt'].mean()
+#     var_market_return = np.std(data['mkt']) ** 2
+#     def garch_mle(params):
+#         mu = params[0]
+#         omega = params[1]
+#         alpha = params[2]
+#         beta = params[3]
+#         print(alpha, beta)
+#         lr_volatility = (omega/(1 - alpha - beta)) ** 0.5
+#         resid = data['mkt'] - mu
+#         realised = abs(resid)
+#         conditional = np.zeros(data['mkt'].shape[0])
+#         conditional[0] = lr_volatility
+#         for t in range(1, data['mkt'].shape[0]):
+#             conditional[t] = (omega + alpha*resid[t-1] ** 2 + beta*conditional[t-1]**2) ** 0.5
+#         likelihood = 1/((2*np.pi)**0.5*conditional)*np.exp(-realised**2/(2*conditional**2))
+#         log_likelihood = np.sum(np.log(likelihood))
+#         return -log_likelihood
+#
+#     def constraint(params):
+#         return 1 - params[2] - params[3]
+#
+#     cons = {'type':'ineq', 'fun':constraint}
+#
+#     res = spop.minimize(garch_mle, [market_mean_return, var_market_return, 0.2, 0.2], constraints=cons, method='SLSQP')
+#     params = res.x
+#     for param in params:
+#         print(param)
 
 
+def ex5(data):
+    market_returns = data['mkt'] * 100
+    model = arch_model(market_returns, vol="GARCH", mean="Constant", p=1, q=1)
+    model_fit = model.fit()
+    print(model_fit.summary())
 
-
-ex4(data)
+ex5(data)
