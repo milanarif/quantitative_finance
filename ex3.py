@@ -152,7 +152,7 @@ def ex3(data):
     return pd.DataFrame(res[1])
 
 
-# ex3(data)
+ex3(data)
 
 
 def ex4(data):
@@ -185,6 +185,18 @@ def ex4(data):
     print("eta_l", eta_l)
     print("delta_1", delta_l)
     print("omega_l", omega_l)
+
+# QUESTION 4(b)
+
+    def cdfNE(x, omega, eta, delta):
+        return norm.cdf((x-eta) / omega) - np.exp(((omega ** 2) / (2 * delta ** 2)) - ((x-eta) / delta)) * norm.cdf(((x - eta) / omega) - (omega / delta))
+
+    def targetfunc(x, omega, eta, delta, alpha):
+        return cdfNE(x, omega, eta, delta) - alpha
+
+    print(fsolve(targetfunc, 0, (omega_l, eta_l, delta_l, 0.98)))
+
+
 
 
 ex4(data)
