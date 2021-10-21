@@ -105,15 +105,20 @@ def ex2(data):
 
 
 def ex3(data):
+    print("EXERCISE 3(a)")
     return_market = data['mkt']
     delta = return_market.std() * cbrt(return_market.skew() / 2)
     omega = (return_market.var() - (delta ** 2)) ** 0.5
     eta = return_market.mean() - delta
 
+    skewness_return_market = 2 * ((delta / (((omega ** 2) + (delta ** 2)) ** 0.5)) ** 3)
+    print("Skew(Rm):", skewness_return_market)
+
     print("delta:", delta)
     print("omega:", omega)
     print("eta:", eta)
 
+    print("EXERCISE 3(b)")
     variables = []
     for i in range(5):
         return_data = data[['mkt']].copy()
@@ -137,9 +142,7 @@ def ex3(data):
             market_returns.append(excess_return_mkt)
             for i in range(5):
                 returns += 0.2 * (
-                        var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * excess_return_mkt + np.random.normal(0,
-                                                                                                             var_matrix.iloc[
-                                                                                                                 i, 2]))
+                        var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * excess_return_mkt + np.random.normal(0, var_matrix.iloc[i, 2]))
             asset_returns.append(returns)
 
         return [np.array(asset_returns), np.array(market_returns)]
@@ -152,31 +155,6 @@ def ex3(data):
 # ex3(data)
 
 
-# def ex4(data):
-#     loss_return = data.iloc[:, 2:].mean(axis=1) * -1
-#     expected_return_loss = loss_return.mean()
-#     std_loss_return = loss_return.std()
-#     skew_loss_return = loss_return.skew()
-#
-#     delta_L = std_loss_return * cbrt(skew_loss_return / 2)
-#     omega_L = (std_loss_return ** 2 - delta_L ** 2) ** 0.5
-#     eta_L = (expected_return_loss - delta_L)
-#
-#     # print(delta_L, omega_L, eta_L)
-#
-#     def NEcdf(x, delta=delta_L, omega=omega_L, eta=eta_L):
-#         part_1 = norm.cdf((x - eta) / omega)
-#         part_2 = np.exp(((omega ** 2) / (2 * (delta ** 2))) - ((x - eta) / delta))
-#         part_3 = norm.cdf((omega / delta) - ((x - eta) / omega))
-#         return part_1 + (part_2 * part_3)
-#
-#     def optimize_goal(x):
-#         return NEcdf(x) - 0.98
-#
-#     opt_x = fsolve(optimize_goal, 0, maxfev=10000)
-#     print(NEcdf(opt_x), opt_x)
-
-
 def ex4(data):
     variables = []
     for i in range(5):
@@ -187,19 +165,24 @@ def ex4(data):
         result = model.fit()
         residual_std = result.resid.std()
         variables.append([result.params[0], result.params[1], residual_std])
-        var_matrix = pd.DataFrame(variables)
-        var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
-        var_matrix.index = data.iloc[:, 2:].columns
+
+    var_matrix = pd.DataFrame(variables)
+    var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+    var_matrix.index = data.iloc[:, 2:].columns
+
+    print(var_matrix, "\n")
 
     return_market = data['mkt']
-    delta = return_market.std() * cbrt(return_market.skew() / 2)
-    omega = (return_market.var() - (delta ** 2)) ** 0.5
-    eta = return_market.mean() - delta
+    delta_m = return_market.std() * cbrt(return_market.skew() / 2)
+    omega_m = (return_market.var() - (delta_m ** 2)) ** 0.5
+    eta_m = return_market.mean() - delta_m
 
-
-
-
-
-
+    eta_l = 0
+    delta_l = 0
+    for i in range (5):
+        eta_l -= 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * eta_m) * 50000
+        delta_l -= 0.2 * var_matrix.iloc[i, 1] * delta_m * 50000
+    print(eta_l)
+    print(delta_l)
 
 ex4(data)
