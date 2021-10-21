@@ -147,7 +147,7 @@ def ex3(data):
 
         return [np.array(asset_returns), np.array(market_returns)]
 
-    res = day_returns_MC(var_matrix, 10000)
+    res = day_returns_MC(var_matrix, 1000000)
     print(np.percentile(res[0], 2) * 50000)
     return pd.DataFrame(res[1])
 
@@ -177,11 +177,13 @@ def ex4(data):
 
     eta_l = 0
     delta_l = 0
-    omega_l = 0
+    omega_sum = 0
     for i in range (5):
         eta_l -= 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * eta_m) * 50000
         delta_l -= 0.2 * var_matrix.iloc[i, 1] * delta_m * 50000
-        omega_l += (((var_matrix.iloc[:, 1].mean() * omega_m) ** 2) + (0.04 * (var_matrix.iloc[i, 2] ** 2))) * 50000
+        omega_sum += (0.04 * (var_matrix.iloc[i, 2] ** 2))
+
+    omega_l = np.sqrt(((var_matrix.iloc[:, 1].mean() * omega_m) ** 2) + omega_sum) * 50000
     print("eta_l", eta_l)
     print("delta_1", delta_l)
     print("omega_l", omega_l)
@@ -189,7 +191,12 @@ def ex4(data):
 # QUESTION 4(b)
 
     def cdfNE(x, omega, eta, delta):
-        return norm.cdf((x-eta) / omega) - np.exp(((omega ** 2) / (2 * delta ** 2)) - ((x-eta) / delta)) * norm.cdf(((x - eta) / omega) - (omega / delta))
+        if (delta > 0):
+            return norm.cdf((x-eta) / omega) - np.exp(((omega ** 2) / (2 * (delta ** 2))) - ((x-eta) / delta)) * norm.cdf(((x - eta) / omega) - (omega / delta))
+        if (delta < 0):
+            return norm.cdf((x - eta) / omega) + np.exp(
+                ((omega ** 2) / (2 * delta ** 2)) - ((x - eta) / delta)) * norm.cdf(
+                (omega / delta) - ((x - eta) / omega))
 
     def targetfunc(x, omega, eta, delta, alpha):
         return cdfNE(x, omega, eta, delta) - alpha
