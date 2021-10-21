@@ -170,8 +170,6 @@ def ex4(data):
     var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
     var_matrix.index = data.iloc[:, 2:].columns
 
-    print(var_matrix, "\n")
-
     return_market = data['mkt']
     delta_m = return_market.std() * cbrt(return_market.skew() / 2)
     omega_m = (return_market.var() - (delta_m ** 2)) ** 0.5
@@ -179,10 +177,14 @@ def ex4(data):
 
     eta_l = 0
     delta_l = 0
+    omega_l = 0
     for i in range (5):
         eta_l -= 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * eta_m) * 50000
         delta_l -= 0.2 * var_matrix.iloc[i, 1] * delta_m * 50000
-    print(eta_l)
-    print(delta_l)
+        omega_l += (((var_matrix.iloc[:, 1].mean() * omega_m) ** 2) + (0.04 * (var_matrix.iloc[i, 2] ** 2))) * 50000
+    print("eta_l", eta_l)
+    print("delta_1", delta_l)
+    print("omega_l", omega_l)
+
 
 ex4(data)
