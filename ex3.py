@@ -101,6 +101,7 @@ def ex2(data):
 
     print(np.percentile(day_returns_MC(var_matrix, market_my, market_sigma, 25000), 2) * 50000)
     print(var)
+    print(market_sigma)
 
 
 # ex2(data)
@@ -207,41 +208,51 @@ def ex4(data):
 
 # ex4(data)
 
-# def ex5(data):
-#     market_mean_return = data['mkt'].mean()
-#     var_market_return = np.std(data['mkt']) ** 2
-#     def garch_mle(params):
-#         mu = params[0]
-#         omega = params[1]
-#         alpha = params[2]
-#         beta = params[3]
-#         print(alpha, beta)
-#         lr_volatility = (omega/(1 - alpha - beta)) ** 0.5
-#         resid = data['mkt'] - mu
-#         realised = abs(resid)
-#         conditional = np.zeros(data['mkt'].shape[0])
-#         conditional[0] = lr_volatility
-#         for t in range(1, data['mkt'].shape[0]):
-#             conditional[t] = (omega + alpha*resid[t-1] ** 2 + beta*conditional[t-1]**2) ** 0.5
-#         likelihood = 1/((2*np.pi)**0.5*conditional)*np.exp(-realised**2/(2*conditional**2))
-#         log_likelihood = np.sum(np.log(likelihood))
-#         return -log_likelihood
-#
-#     def constraint(params):
-#         return 1 - params[2] - params[3]
-#
-#     cons = {'type':'ineq', 'fun':constraint}
-#
-#     res = spop.minimize(garch_mle, [market_mean_return, var_market_return, 0.2, 0.2], constraints=cons, method='SLSQP')
-#     params = res.x
-#     for param in params:
-#         print(param)
-
 
 def ex5(data):
     market_returns = data['mkt'] * 100
     model = arch_model(market_returns, vol="GARCH", mean="Constant", p=1, q=1)
     model_fit = model.fit()
-    print(model_fit.summary())
+    plt.plot(model_fit.conditional_volatility)
+    var_mkt = np.var(market_returns)
+    plt.axhline(y=var_mkt, color='r', linestyle='-')
+    plt.savefig("5_variance.png", dpi=300)
+    plt.show()
+    # print(model_fit.summary())
+    print("mu", model_fit.params[0]/100)
+    print("omega", model_fit.params[1]/100)
+    print("gamma", model_fit.params[2])
+    print("theta", model_fit.params[3])
+
+    variables = []
+    for i in range(5):
+        return_data = data[['mkt']].copy()
+        return_data['ret'] = data.iloc[:, 2 + i]
+
+        model = smf.ols("ret ~ mkt", data=return_data)
+        result = model.fit()
+        residual_std = result.resid.std()
+        variables.append([result.params[0], result.params[1], residual_std])
+
+    var_matrix = pd.DataFrame(variables)
+    var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+    var_matrix.index = data.iloc[:, 2:].columns
+
+    def day_returns_MC(var_matrix, market_mu=0.000901, runs=10000):
+        asset_returns = []
+        market_ret = 0.00287
+        sigma = 0.0000314
+        for i in tqdm(range(runs)):
+            returns = 0
+            sigma = 0.00000451 + 0.195 * ((market_ret - market_mu) ** 2) + 0.7495 * (sigma)
+            market_ret = market_mu + sigma * np.random.normal(0, 1)
+            for i in range(5):
+                returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * market_ret + np.random.normal(0, var_matrix.iloc[i, 2]))
+            asset_returns.append(returns)
+
+        return np.array(asset_returns)
+
+    print(np.percentile(day_returns_MC(var_matrix, runs=250000), 2) * 50000)
+
 
 ex5(data)
