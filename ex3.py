@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import numpy as np
 from statistics import NormalDist
@@ -147,7 +149,7 @@ def ex3(data):
 
         return [np.array(asset_returns), np.array(market_returns)]
 
-    res = day_returns_MC(var_matrix, 1000000)
+    res = day_returns_MC(var_matrix, 50000)
     print(np.percentile(res[0], 2) * 50000)
     return pd.DataFrame(res[1])
 
@@ -290,4 +292,102 @@ def ex6(data):
 # ex6(data)
 
 def ex7(data):
+    return_market = data['mkt']
+    delta = return_market.std() * cbrt(return_market.skew() / 2)
+    omega = (return_market.var() - (delta ** 2)) ** 0.5
+    eta = return_market.mean() - delta
+
+    skewness_return_market = 2 * ((delta / (((omega ** 2) + (delta ** 2)) ** 0.5)) ** 3)
+    print("Skew(Rm):", skewness_return_market)
+
+    print("delta:", delta)
+    print("omega:", omega)
+    print("eta:", eta)
+
+    variables = []
+    for i in range(5):
+        return_data = data[['mkt']].copy()
+        return_data['ret'] = data.iloc[:, 2 + i]
+
+        model = smf.ols("ret ~ mkt", data=return_data)
+        result = model.fit()
+        residual_std = result.resid.std()
+        variables.append([result.params[0], result.params[1], residual_std])
+
+    var_matrix = pd.DataFrame(variables)
+    var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+    var_matrix.index = data.iloc[:, 2:].columns
+
+    def day_returns_MC(var_matrix, runs):
+        asset_returns = []
+        market_returns = []
+        for i in tqdm(range(runs)):
+            returns = 0
+            excess_return_mkt = eta + delta * np.random.exponential(1) + omega * np.random.normal(0, 1)
+            market_returns.append(excess_return_mkt)
+            for i in range(5):
+                returns += 0.2 * (
+                        var_matrix['alpha'][i] + var_matrix['mkt_beta'][i] * excess_return_mkt + np.random.normal(0, var_matrix['sigma'][i]))
+            asset_returns.append(returns)
+
+        return [np.array(asset_returns), np.array(market_returns)]
+
+    # res = day_returns_MC(var_matrix, 250000)
+    # print((np.percentile(res[0], 2) * 50000) * (10 ** 0.5))
+
+    print(var_matrix)
+
+    portfolio_returns = day_returns_MC(var_matrix, 300000)
+
+    plt.hist(portfolio_returns[0], bins=1000, color='red')
+    plt.hist(portfolio_returns[1], bins=1000, color='blue')
+    plt.show()
+ex7(data)
+
+def ex8():
+    returns = pd.read_excel('data_Ass3_G2.xlsx', sheet_name='ex8', engine='openpyxl')
+    return_market = returns['mkt']
+    delta = return_market.std() * cbrt(return_market.skew() / 2)
+    omega = (return_market.var() - (delta ** 2)) ** 0.5
+    eta = return_market.mean() - delta
+
+    variables = []
+    for i in range(5):
+        return_data = returns[['mkt']].copy()
+        return_data['ret'] = returns.iloc[:, 1 + i]
+
+        model = smf.ols("ret ~ mkt", data=return_data)
+        result = model.fit()
+        residual_std = result.resid.std()
+        variables.append([result.params[0], result.params[1], residual_std])
+
+    var_matrix = pd.DataFrame(variables)
+    var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
+    var_matrix.index = data.iloc[:, 2:].columns
+
+    def ten_day_returns_MC(var_matrix, runs):
+        asset_returns = []
+        market_returns = []
+        for i in tqdm(range(runs)):
+            returns = 0
+            excess_return_mkt = eta + delta * np.random.exponential(1) + omega * np.random.normal(0, 1)
+            market_returns.append(excess_return_mkt)
+            for i in range(5):
+                returns += 0.2 * (
+                        var_matrix['alpha'][i] + var_matrix['mkt_beta'][i] * excess_return_mkt + np.random.normal(0, var_matrix['sigma'][i]))
+            asset_returns.append(returns)
+
+        return [np.array(asset_returns), np.array(market_returns)]
+
+    # res = ten_day_returns_MC(var_matrix, 250000)
+    # print((np.percentile(res[0], 2) * 50000) * (10 ** 0.5))
+
+    print(var_matrix)
+    portfolio_returns = ten_day_returns_MC(var_matrix, 500000)
+
+    plt.hist(portfolio_returns, bins = 100)
+    plt.show()
+
+
+# ex8()
 
