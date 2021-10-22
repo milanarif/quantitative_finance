@@ -5,14 +5,12 @@ import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy.special import cbrt
-from sympy import Symbol, solve
 from scipy.stats import norm
-import scipy.optimize as spop
 from scipy.optimize import fsolve
 from arch import arch_model
+import scipy
 
 data = pd.read_excel('data_Ass3_G2.xlsx', sheet_name='Returns', engine='openpyxl').drop('date', 1)
-
 
 def ex1(data):
     print("EXERCISE 1")
@@ -33,7 +31,6 @@ def ex1(data):
 
 
 # ex1(data)
-
 
 def ex2(data):
     print("EXERCISE 2")
@@ -210,19 +207,24 @@ def ex4(data):
 
 
 def ex5(data):
+    # Times 100 later divide omega by 100^2
     market_returns = data['mkt'] * 100
     model = arch_model(market_returns, vol="GARCH", mean="Constant", p=1, q=1)
     model_fit = model.fit()
-    plt.plot(model_fit.conditional_volatility)
+    plt.plot(model_fit.conditional_volatility ** 2)
     var_mkt = np.var(market_returns)
     plt.axhline(y=var_mkt, color='r', linestyle='-')
     plt.savefig("5_variance.png", dpi=300)
     plt.show()
     # print(model_fit.summary())
-    print("mu", model_fit.params[0]/100)
-    print("omega", model_fit.params[1]/100)
-    print("gamma", model_fit.params[2])
-    print("theta", model_fit.params[3])
+    mu = model_fit.params[0]/100
+    omega = model_fit.params[1] / 10000
+    gamma = model_fit.params[2]
+    theta = model_fit.params[3]
+    print("mu", mu)
+    print("omega", omega)
+    print("gamma", gamma)
+    print("theta", theta)
 
     variables = []
     for i in range(5):
@@ -238,13 +240,13 @@ def ex5(data):
     var_matrix.columns = ['alpha', 'mkt_beta', 'sigma']
     var_matrix.index = data.iloc[:, 2:].columns
 
-    def day_returns_MC(var_matrix, market_mu=0.000901, runs=10000):
+    def day_returns_MC(var_matrix, market_mu, gamma, theta, runs=10000):
         asset_returns = []
         market_ret = 0.00287
         sigma = 0.0000314
         for i in tqdm(range(runs)):
             returns = 0
-            sigma = 0.00000451 + 0.195 * ((market_ret - market_mu) ** 2) + 0.7495 * (sigma)
+            sigma = mu + gamma * ((market_ret - market_mu) ** 2) + theta * (sigma)
             market_ret = market_mu + sigma * np.random.normal(0, 1)
             for i in range(5):
                 returns += 0.2 * (var_matrix.iloc[i, 0] + var_matrix.iloc[i, 1] * market_ret + np.random.normal(0, var_matrix.iloc[i, 2]))
@@ -252,7 +254,40 @@ def ex5(data):
 
         return np.array(asset_returns)
 
-    print(np.percentile(day_returns_MC(var_matrix, runs=250000), 2) * 50000)
+    # print(np.percentile(day_returns_MC(var_matrix, mu, gamma, theta, runs=50000), 2) * 50000)
+    print(var_matrix)
 
 
-ex5(data)
+# ex5(data)
+
+def ex6(data):
+    cov_matrix = data.iloc[:, 2:].cov()
+    mean_vector = data.iloc[:, 2:].mean()
+    weight_vector = [0.2, 0.2, 0.2, 0.2, 0.2]
+    portfolio_value = 50000
+
+    def constraint(weights):
+        return 1 - sum(weights)
+
+    cons = {'type': 'eq', 'fun': constraint}
+
+    def var_calc(weight_vector):
+
+        weight_vector = pd.DataFrame(weight_vector)
+        portfolio_my = weight_vector.values.flatten().T.dot(mean_vector)
+        portfolio_sigma = (((weight_vector.values.flatten().T.dot(cov_matrix)).dot(weight_vector)) ** 0.5)[0]
+        inv_dist_98 = NormalDist(0, 1).inv_cdf(0.98)
+
+        value_at_risk = (- portfolio_my * portfolio_value) + (portfolio_sigma * portfolio_value * inv_dist_98)
+
+        return value_at_risk
+
+    res = scipy.optimize.minimize(var_calc, weight_vector, constraints=cons)
+    print(res.x)
+    print(res.fun)
+    print(round((res.fun / 50000) * 100, 2), "%")
+
+# ex6(data)
+
+def ex7(data):
+
